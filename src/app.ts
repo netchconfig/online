@@ -43,11 +43,8 @@ function mapYamlToJsonBase64(src: string, dest: string) {
             password: value.password
         }
     })
-    // string2Base64
-    const out = Buffer.from(
         // json2Strin
-        JSON.stringify(netchServers)
-    ).toString("base64")
+    const out = JSON.stringify(netchServers)
     //write to file
     fs.writeFileSync(dest, out)
 }
@@ -68,7 +65,7 @@ async function main(src: string, dest: string) {
 
         let destConfig = path.relative(src,clashConfig)
         //replace extension
-        destConfig = replaceExtension(destConfig,".txt")
+        destConfig = replaceExtension(destConfig,".json")
         destConfig = path.resolve(dest, destConfig)
         try {
             fs.mkdirSync(path.dirname(destConfig))
