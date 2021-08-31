@@ -1,0 +1,19 @@
+{
+  "name": "clash2netch-subscription-converter",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/app.ts",
+  "scripts": {},
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.3",
+    "@types/node": "^16.7.7"
+  },
+  "dependencies": {
+    "typescript": "^4.4.2",
+    "glob": "^7.1.7",
+    "js-yaml": "^4.1.0",
+    "ts-node": "^10.2.1"
+  }
+}

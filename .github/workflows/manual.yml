@@ -1,0 +1,97 @@
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 * * * *'
+jobs:
+
+  checkIfNewCommitNeeded:
+    runs-on: ubuntu-latest
+    outputs:
+      shouldProceed: ${{steps.check.outputs.shouldProceed}}
+    steps:
+      - name: checkout clashconfig
+        uses: actions/checkout@v2
+        with:
+          path: clashconfigs
+          repository: clashconfig/online
+          ref: main
+      - name: checkout netch
+        uses: actions/checkout@v2
+        with:
+          path: netch
+      - name: list files
+        run: |
+          ls -ltra
+      - name: check
+        id: check
+        run: |
+          cd clashconfigs
+          clash=$(git rev-parse HEAD)
+          cd ..
+          mkdir -p netch/configs/
+          touch netch/configs/last_update_hash.txt
+          netch=$(cat netch/configs/last_update_hash.txt)
+          if [[ $clash = $netch ]]
+          then
+            shouldProceed=false
+          else
+            shouldProceed=true
+          fi
+          echo "clash: $clash"
+          echo "netch: $netch"
+          echo "shouldProceed: $shouldProceed"
+          echo "::set-output name=shouldProceed::$shouldProceed"
+  yml2txt:
+    needs:
+      [checkIfNewCommitNeeded]
+    if: needs.checkIfNewCommitNeeded.outputs.shouldProceed  == 'true'
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: see last output result
+        run: |
+          echo 'result: ${{ needs.checkIfNewCommitNeeded.outputs.shouldProceed }}'
+      - name: checkout clashconfig
+        uses: actions/checkout@v2
+        with:
+          path: clashconfigs
+          repository: clashconfig/online
+          ref: main
+      - name: checkout netch
+        uses: actions/checkout@v2
+        with:
+          path: netch
+          ref: master
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - name: install dependencies
+
+        run: |
+          cd netch
+          npm install
+      - name: run converter and add last sha1
+        run: |
+          cd netch
+          rm -rf ./configs/*
+          npx ts-node . ../clashconfigs ./configs
+          cd ../clashconfigs
+          clashSha1=$(git rev-parse main)
+          cd ..
+          mkdir -p netch/configs/
+          echo "$clashSha1" > netch/configs/last_update_hash.txt
+
+      - name: Commit files
+        run: |
+          cd netch
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .
+          git commit -m "changes on $(date -u)"
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          directory: netch
+          github_token: ${{ github.token }}
+          branch: ${{ github.ref }}
